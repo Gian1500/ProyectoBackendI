@@ -1,42 +1,48 @@
 import { Server } from 'socket.io';
-import { readProducts, writeProducts } from './utils/productUtils.js';
+import { readProducts, writeProducts } from './utils/ProductManager.js'; // Ajusta la ruta según tu estructura
 
-// Función para inicializar Socket.IO con el servidor
 export function initSocket(server) {
-    // Crea una instancia de Socket.IO asociada al servidor HTTP
     const io = new Server(server);
 
-    // Maneja la conexión de un cliente al servidor WebSocket
     io.on('connection', (socket) => {
         console.log('Cliente conectado');
 
-        // Cuando un cliente se conecta, envía la lista actual de productos
+        // Enviar productos al cliente cuando se conecta
         socket.emit('product-updated', readProducts());
 
-        // Escucha el evento 'product-added' cuando el cliente agrega un nuevo producto
+        // Escuchar el evento de añadir producto
         socket.on('product-added', (product) => {
-            const products = readProducts();  // Lee los productos actuales
-            // Crea un nuevo producto con un ID único y estado activo
-            const newProduct = {
-                id: (products.length + 1).toString(),  // Genera un ID secuencial
-                ...product,  
-                status: true  
-            };
-            products.push(newProduct); 
-            writeProducts(products);  
-            io.emit('product-updated', products);  // Envía la lista actualizada a todos los clientes
+            try {
+                const products = readProducts();
+                const newProduct = {
+                    id: (products.length + 1).toString(),
+                    ...product,
+                    status: true
+                };
+                products.push(newProduct);
+                writeProducts(products);
+                io.emit('product-updated', products); // Emitir la lista de productos actualizada
+            } catch (error) {
+                console.error('Error al añadir producto:', error);
+            }
         });
 
-        // Escucha el evento 'product-deleted' cuando el cliente elimina un producto
+        // Escuchar el evento de eliminar producto
         socket.on('product-deleted', (productId) => {
-            let products = readProducts(); 
-            // Filtra la lista para eliminar el producto con el ID especificado
-            products = products.filter(p => p.id !== productId);
-            writeProducts(products); 
-            io.emit('product-updated', products);  // Envía la lista actualizada a todos los clientes
+            try {
+                let products = readProducts();
+                products = products.filter(p => p.id !== productId);
+                writeProducts(products);
+                io.emit('product-updated', products); // Emitir la lista de productos actualizada
+            } catch (error) {
+                console.error('Error al eliminar producto:', error);
+            }
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Cliente desconectado');
         });
     });
 
-    // Retorna la instancia de Socket.IO para su uso en otros módulos si es necesario
     return io;
 }

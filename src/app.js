@@ -1,31 +1,20 @@
-// Importacion de los módulos necesarios: express para crear el servidor, handlebars para el motor de plantillas,
-// path para manejar rutas, socket.io para WebSockets y http para crear el servidor HTTP.
 import express from 'express';
 import { engine } from 'express-handlebars';
 import path from 'path';
 import { Server } from 'socket.io';
 import http from 'http';
 
+import productsRouter from './routes/products.router.js';
+import cartsRouter from './routes/carts.router.js'; 
+import viewsRouter from './routes/views.router.js';
+import { readProducts, writeProducts } from './utils/ProductManager.js'; 
+
 const app = express();
-const __dirname = path.resolve();
+const __dirname = path.resolve(); // Resolve el directorio actual
 const server = http.createServer(app);
 const io = new Server(server);
 
-let products = [
-    {
-        id: "1",
-        title: "Zapatillas PUMA",
-        description: "para running",
-        code: "123",
-        price: 20000,
-        status: true,
-        stock: 30,
-        category: "Ropa",
-        thumbnails: []
-    }
-];
-
-// Configuración de los Handlebars
+// Configuración de Handlebars
 app.engine('handlebars', engine({
     defaultLayout: 'main',
     extname: '.handlebars'
@@ -33,52 +22,49 @@ app.engine('handlebars', engine({
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'src/views'));
 
-// Servir archivos estáticos del frontend
+// Middleware
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'src/public')));
 
-// Ruta principal para renderizar la vista de los productos
-app.get('/', (req, res) => {
-    res.render('home', { products });
-});
+// Rutas
+app.use('/', viewsRouter);
+app.use('/api/products', productsRouter(io));
+app.use('/api/carts', cartsRouter);
 
-// Ruta para renderiazar los productos en tiempo real
-app.get('/realTimeProducts', (req, res) => {
-    res.render('realtimeProducts');
-});
-
-// Configuración de Socket.IO para el manejo de productos en tiempo real
+// Configuración de Socket.IO
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado');
+    
+    // Emitir productos actuales al conectarse un cliente
+    socket.emit('product-updated', readProducts());
 
-    // Emite la lista de productos actual cuando un cliente se conecta
-    socket.emit('product-updated', products);
-
-     // Escucha el evento 'product-added' que se emite cuando se añade un nuevo producto desde el cliente.
-    socket.on('product-added', (newProduct) => {
-          // Crea un nuevo objeto de producto a partir de los datos enviados por el cliente.
-        const product = {
+    // Escuchar el evento de añadir producto desde el cliente
+    socket.on('product-added', (product) => {
+        const products = readProducts();
+        const newProduct = {
             id: (products.length + 1).toString(),
-            title: newProduct.title,
-            description: newProduct.description || "",
-            code: newProduct.code || "",
-            price: newProduct.price,
-            status: true,
-            stock: newProduct.stock || 0,
-            category: newProduct.category || "Sin categoría",
-            thumbnails: []
+            ...product,
+            status: true
         };
-        products.push(product);
-
-        // Emite la lista actualizada de productos a todos los clientes conectados
+        products.push(newProduct);
+        writeProducts(products); // Guardar los cambios aquí
         io.emit('product-updated', products);
     });
-    // Maneja la desconexión de un cliente.
+
+    // Escuchar el evento de eliminar producto desde el cliente
+    socket.on('product-deleted', (productId) => {
+        let products = readProducts();
+        products = products.filter(p => p.id !== productId);
+        writeProducts(products); // Guardar los cambios aquí
+        io.emit('product-updated', products);
+    });
+
     socket.on('disconnect', () => {
         console.log('Cliente desconectado');
     });
 });
 
-// Inicia el servidor en el puerto 8080
+// Iniciar el servidor
 server.listen(8080, () => {
     console.log('Server ON en puerto 8080');
 });

@@ -8,6 +8,7 @@ const productsFilePath = path.join(path.resolve(), 'src', 'data', 'products.json
 export const readProducts = () => {
     // Verifica si el archivo de productos existe
     if (!fs.existsSync(productsFilePath)) {
+        console.log('Archivo de productos no encontrado. Retornando lista vacía.');
         return [];
     }
 
@@ -20,4 +21,5 @@ export const readProducts = () => {
 export const writeProducts = (products) => {
     const data = JSON.stringify(products, null, 2);
     fs.writeFileSync(productsFilePath, data);
+    console.log('Productos guardados correctamente.');
 };
