@@ -13,8 +13,16 @@
     "products": [
       {
         "product": "1",
-        "quantity": 1
+        "quantity": 2
       }
     ]
+  },
+  {
+    "id": "3",
+    "products": []
+  },
+  {
+    "id": "4",
+    "products": []
   }
 ]

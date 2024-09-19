@@ -1,0 +1,43 @@
+[
+  {
+    "id": "1",
+    "title": "Producto Actualizado",
+    "description": "para running",
+    "code": "123",
+    "price": 250,
+    "status": true,
+    "stock": 45,
+    "category": "Ropa",
+    "thumbnails": []
+  },
+  {
+    "id": "2",
+    "title": "12312",
+    "price": 23213,
+    "status": true
+  },
+  {
+    "id": "3",
+    "name": "123123",
+    "price": 1123123,
+    "status": true
+  },
+  {
+    "id": "4",
+    "name": "asdsad",
+    "price": 123123,
+    "status": true
+  },
+  {
+    "id": "5",
+    "title": "zxcxzc",
+    "price": 12321,
+    "status": true
+  },
+  {
+    "id": "6",
+    "name": "13212",
+    "price": 123123,
+    "status": true
+  }
+]

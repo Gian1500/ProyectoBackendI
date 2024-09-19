@@ -1,22 +1,28 @@
+// src/routes/products.js
 import { Router } from 'express';
 import fs from 'fs';
+import path from 'path';
+import { initSocket } from '../socket.js';
+
 
 const router = Router();
-const path = './routes/products.json';
+
+// __dirname representa el directorio actual de este archivo
+const productsFilePath = path.join(path.resolve(), 'src', 'data', 'products.json');
 
 const readProducts = () => {
-    if (!fs.existsSync(path)) {
+    if (!fs.existsSync(productsFilePath)) {
         return [];
     }
-    const data = fs.readFileSync(path, 'utf-8');
+    const data = fs.readFileSync(productsFilePath, 'utf-8');
     return JSON.parse(data);
 };
 
 const writeProducts = (products) => {
-    fs.writeFileSync(path, JSON.stringify(products, null, 2));
+    fs.writeFileSync(productsFilePath, JSON.stringify(products, null, 2));
 };
 
-// Listar todos los productos (con limitación opcional)
+// Rutas para manejar productos (listado, creación, actualización, eliminación)
 router.get('/', (req, res) => {
     const products = readProducts();
     const limit = parseInt(req.query.limit, 10);
@@ -26,7 +32,6 @@ router.get('/', (req, res) => {
     res.json(products);
 });
 
-// Obtener producto por ID
 router.get('/:pid', (req, res) => {
     const products = readProducts();
     const product = products.find(p => p.id === req.params.pid);
@@ -36,7 +41,6 @@ router.get('/:pid', (req, res) => {
     res.json(product);
 });
 
-// Agregar nuevo producto
 router.post('/', (req, res) => {
     const products = readProducts();
     const newProduct = {
@@ -46,10 +50,10 @@ router.post('/', (req, res) => {
     };
     products.push(newProduct);
     writeProducts(products);
+    initSocket().emit('product-updated', products); // Emitir evento de actualización
     res.status(201).json(newProduct);
 });
 
-// Actualizar producto por ID
 router.put('/:pid', (req, res) => {
     const products = readProducts();
     const index = products.findIndex(p => p.id === req.params.pid);
@@ -61,11 +65,11 @@ router.put('/:pid', (req, res) => {
     res.json(products[index]);
 });
 
-// Eliminar producto por ID
 router.delete('/:pid', (req, res) => {
     let products = readProducts();
     products = products.filter(p => p.id !== req.params.pid);
     writeProducts(products);
+    initSocket().emit('product-updated', products); // Emitir evento de actualización
     res.status(204).end();
 });
 
