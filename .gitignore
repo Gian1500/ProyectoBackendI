@@ -1,1 +1,4 @@
-node_modules/
+#modulos
+/node_modules
+/.env.development
+/.env.production
